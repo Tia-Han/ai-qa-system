@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人工智能基础问答系统</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 20px;
+        }
+        .question-input {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            margin-bottom: 15px;
+        }
+        .question-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+        .btn-secondary {
+            background: #ddd;
+            color: #333;
+        }
+        .answer-area {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            min-height: 100px;
+        }
+        .answer-title {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .knowledge-list {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .knowledge-item {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+        }
+        .knowledge-item:last-child {
+            border-bottom: none;
+        }
+        .knowledge-item:hover {
+            background: #e9ecef;
+        }
+        .history-area {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .history-item {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+        .history-item:last-child {
+            border-bottom: none;
+        }
+        .tab {
+            display: inline-block;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-right: 5px;
+            border-radius: 5px;
+            background: #eee;
+        }
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 人工智能基础问答系统</h1>
+        </div>
+        <div class="content">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('qa')">问答</div>
+                <div class="tab" onclick="switchTab('knowledge')">知识库</div>
+                <div class="tab" onclick="switchTab('history')">提问记录</div>
+            </div>
+            
+            <div id="qa" class="tab-content active">
+                <input type="text" class="question-input" id="question" placeholder="请输入您的问题..." onkeypress="handleKeyPress(event)">
+                <button class="btn" onclick="askQuestion()">提问</button>
+                <button class="btn btn-secondary" onclick="clearAll()">清空</button>
+                
+                <div class="answer-area" id="answer">
+                    <div class="answer-title">回答：</div>
+                    <div id="answer-text">请输入问题并点击提问按钮</div>
+                </div>
+            </div>
+            
+            <div id="knowledge" class="tab-content">
+                <div class="knowledge-list" id="knowledge-list"></div>
+            </div>
+            
+            <div id="history" class="tab-content">
+                <div class="history-area" id="history-area">暂无提问记录</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const knowledgeBase = {
+            "什么是人工智能？": "人工智能（Artificial Intelligence，简称AI）是计算机科学的一个分支，致力于研究、开发用于模拟、延伸和扩展人的智能的理论、方法、技术及应用系统。",
+            "什么是机器学习？": "机器学习（Machine Learning）是人工智能的核心技术之一，它使计算机系统能够从数据中学习并改进其性能，而无需进行明确编程。",
+            "什么是深度学习？": "深度学习（Deep Learning）是机器学习的一个子集，它使用多层神经网络来模拟人脑的学习过程。",
+            "人工智能和机器学习的关系？": "人工智能是一个广泛的概念，指的是机器表现出的智能。机器学习是实现人工智能的一种方法。简单来说：人工智能 > 机器学习 > 深度学习。",
+            "什么是神经网络？": "神经网络（Neural Network）是一种模仿人脑神经元结构和功能的计算模型，由大量的节点和它们之间的连接组成。",
+            "什么是监督学习？": "监督学习（Supervised Learning）是机器学习的一种类型，它使用带有标签的训练数据来训练模型，常见任务包括分类和回归。",
+            "什么是非监督学习？": "非监督学习（Unsupervised Learning）是机器学习的一种类型，它使用不带标签的训练数据来训练模型，常见任务包括聚类和降维。",
+            "什么是强化学习？": "强化学习（Reinforcement Learning）是机器学习的一种类型，它通过智能体与环境的交互来学习最优行为策略。",
+            "什么是自然语言处理？": "自然语言处理（Natural Language Processing，简称NLP）是人工智能的一个分支，它使计算机能够理解、处理和生成人类语言。",
+            "什么是图像识别？": "图像识别（Image Recognition）是计算机视觉的一个重要领域，它使计算机能够识别和分类图像中的物体、场景和人物。",
+            "什么是数据挖掘？": "数据挖掘（Data Mining）是从大量数据中发现模式、规律和知识的过程，结合了统计学、机器学习等多种方法。",
+            "什么是特征工程？": "特征工程（Feature Engineering）是机器学习中非常重要的一个环节，它包括选择、提取、转换和创建特征，以便更好地表示数据。",
+            "什么是过拟合？": "过拟合（Overfitting）是指模型在训练数据上表现很好，但在测试数据上表现很差的现象，意味着模型过于复杂。",
+            "什么是欠拟合？": "欠拟合（Underfitting）是指模型在训练数据和测试数据上都表现很差的现象，意味着模型过于简单。",
+            "什么是梯度下降？": "梯度下降（Gradient Descent）是一种优化算法，用于最小化损失函数，通过沿梯度的反方向更新参数来逼近最优解。",
+            "什么是卷积神经网络？": "卷积神经网络（Convolutional Neural Network，简称CNN）是一种专门用于处理网格数据（如图像）的深度学习模型。",
+            "什么是循环神经网络？": "循环神经网络（Recurrent Neural Network，简称RNN）是一种专门用于处理序列数据的深度学习模型。",
+            "什么是Transformer？": "Transformer是一种基于自注意力机制的深度学习模型，由Google在2017年提出，是BERT、GPT等大型语言模型的基础。",
+            "什么是BERT？": "BERT（Bidirectional Encoder Representations from Transformers）是Google在2018年提出的一种预训练语言模型。",
+            "Python在人工智能中的作用？": "Python是人工智能领域最流行的编程语言，拥有丰富的机器学习和深度学习库，如TensorFlow、PyTorch、Scikit-learn等。"
+        };
+
+        const stopWords = new Set(['什', '么', '是', '的', '在', '中', '和', '与', '及', '等', '有', '了', '为', '以', '对', '从', '到', '用', '会', '可以', '这个', '那个', '这些', '那些']);
+
+        const keywordAliases = {
+            'ai': new Set(['人', '工', '智', '能']),
+            'cnn': new Set(['卷', '积', '神', '经', '网', '络']),
+            'rnn': new Set(['循', '环', '神', '经', '网', '络']),
+            'nlp': new Set(['语', '言', '处', '理']),
+        };
+
+        function extractKeywords(text) {
+            const keywords = new Set();
+            for (let char of text) {
+                if (char >= '\u4e00' && char <= '\u9fa5') {
+                    if (!stopWords.has(char)) {
+                        keywords.add(char);
+                    }
+                }
+            }
+            const englishWords = text.match(/[a-zA-Z]+/g) || [];
+            for (let word of englishWords) {
+                if (word.length >= 2) {
+                    const wordLower = word.toLowerCase();
+                    keywords.add(wordLower);
+                    if (keywordAliases[wordLower]) {
+                        keywordAliases[wordLower].forEach(alias => keywords.add(alias));
+                    }
+                }
+            }
+            return keywords;
+        }
+
+        const keywordsToQuestions = {};
+        for (let question of Object.keys(knowledgeBase)) {
+            const keywords = extractKeywords(question);
+            for (let keyword of keywords) {
+                if (!keywordsToQuestions[keyword]) {
+                    keywordsToQuestions[keyword] = [];
+                }
+                keywordsToQuestions[keyword].push(question);
+            }
+        }
+
+        function matchQuestion(userQuestion) {
+            const userKeywords = extractKeywords(userQuestion);
+            
+            if (knowledgeBase[userQuestion]) {
+                return { matchedQuestion: userQuestion, answer: knowledgeBase[userQuestion], matchCount: userKeywords.size };
+            }
+            
+            const candidateQuestions = new Set();
+            for (let keyword of userKeywords) {
+                if (keywordsToQuestions[keyword]) {
+                    keywordsToQuestions[keyword].forEach(q => candidateQuestions.add(q));
+                }
+            }
+            
+            if (candidateQuestions.size === 0) {
+                return { matchedQuestion: null, answer: "未找到答案", matchCount: 0 };
+            }
+            
+            let maxMatchCount = 0;
+            let bestMatch = null;
+            
+            for (let question of candidateQuestions) {
+                const questionKeywords = extractKeywords(question);
+                const intersection = new Set([...userKeywords].filter(k => questionKeywords.has(k)));
+                const matchCount = intersection.size;
+                
+                if (matchCount > maxMatchCount) {
+                    maxMatchCount = matchCount;
+                    bestMatch = question;
+                } else if (matchCount === maxMatchCount) {
+                    if (new Set([...questionKeywords].filter(k => userKeywords.has(k))).size === questionKeywords.size) {
+                        bestMatch = question;
+                    } else if (questionKeywords.size < extractKeywords(bestMatch).size) {
+                        bestMatch = question;
+                    }
+                }
+            }
+            
+            return { matchedQuestion: bestMatch, answer: knowledgeBase[bestMatch] || "未找到答案", matchCount: maxMatchCount };
+        }
+
+        const questionHistory = [];
+
+        function askQuestion() {
+            const input = document.getElementById('question');
+            const userQuestion = input.value.trim();
+            
+            if (!userQuestion) {
+                return;
+            }
+            
+            questionHistory.push(userQuestion);
+            
+            const result = matchQuestion(userQuestion);
+            
+            const answerText = document.getElementById('answer-text');
+            if (result.matchedQuestion) {
+                answerText.innerHTML = `<strong>匹配问题：</strong>${result.matchedQuestion}<br><br>${result.answer}`;
+            } else {
+                answerText.innerHTML = result.answer;
+            }
+            
+            input.value = '';
+            updateHistory();
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                askQuestion();
+            }
+        }
+
+        function clearAll() {
+            document.getElementById('question').value = '';
+            document.getElementById('answer-text').innerHTML = '请输入问题并点击提问按钮';
+            questionHistory.length = 0;
+            updateHistory();
+        }
+
+        function updateHistory() {
+            const historyArea = document.getElementById('history-area');
+            if (questionHistory.length === 0) {
+                historyArea.innerHTML = '暂无提问记录';
+            } else {
+                historyArea.innerHTML = questionHistory.map((q, i) => `<div class="history-item">${i + 1}. ${q}</div>`).join('');
+            }
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+            
+            if (tabName === 'knowledge') {
+                renderKnowledgeList();
+            }
+        }
+
+        function renderKnowledgeList() {
+            const list = document.getElementById('knowledge-list');
+            if (list.innerHTML) return;
+            
+            list.innerHTML = Object.keys(knowledgeBase).map((question, i) => 
+                `<div class="knowledge-item" onclick="selectQuestion('${question}')">${i + 1}. ${question}</div>`
+            ).join('');
+        }
+
+        function selectQuestion(question) {
+            document.getElementById('question').value = question;
+            switchTab('qa');
+        }
+
+        renderKnowledgeList();
+    </script>
+</body>
+</html>
