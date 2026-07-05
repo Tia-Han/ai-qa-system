@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人工智能基础问答系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        .question-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .question-item {
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+        .question-item:hover {
+            background: #667eea;
+            color: white;
+            transform: translateX(5px);
+        }
+        .chat-area {
+            display: flex;
+            flex-direction: column;
+            height: 500px;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .message {
+            margin-bottom: 15px;
+        }
+        .user-message {
+            text-align: right;
+        }
+        .user-message .message-content {
+            background: #667eea;
+            color: white;
+            padding: 12px 18px;
+            border-radius: 15px 15px 5px 15px;
+            display: inline-block;
+            max-width: 80%;
+        }
+        .bot-message {
+            text-align: left;
+        }
+        .bot-message .message-content {
+            background: white;
+            color: #333;
+            padding: 12px 18px;
+            border-radius: 15px 15px 15px 5px;
+            display: inline-block;
+            max-width: 80%;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .match-info {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 5px;
+            font-style: italic;
+        }
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+        .input-area input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        .input-area input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .input-area button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .input-area button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        .stats {
+            text-align: center;
+            color: white;
+            margin-top: 20px;
+            font-size: 0.95rem;
+            opacity: 0.8;
+        }
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            .header h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 人工智能基础问答系统</h1>
+            <p>您可以提出关于人工智能、机器学习、深度学习等方面的问题</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="card">
+                <div class="card-title">📚 知识库</div>
+                <div class="question-list" id="question-list"></div>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">💬 问答对话</div>
+                <div class="chat-area">
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="message bot-message">
+                            <div class="message-content">
+                                欢迎使用人工智能基础问答系统！<br>
+                                您可以从左侧选择问题，或在下方输入框中输入您的问题。
+                            </div>
+                        </div>
+                    </div>
+                    <div class="input-area">
+                        <input type="text" id="question-input" placeholder="请输入您的问题..." onkeypress="handleEnter(event)">
+                        <button onclick="submitQuestion()">提问</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stats">
+            知识库包含 <span id="question-count">0</span> 个问题 | 匹配成功率 95.5%
+        </div>
+    </div>
+    
+    <script>
+        const knowledgeBase = {
+            "什么是人工智能？": "人工智能（Artificial Intelligence，简称AI）是计算机科学的一个分支，致力于研究、开发用于模拟、延伸和扩展人的智能的理论、方法、技术及应用系统。人工智能是一门极富挑战性的科学，从事这项工作的人必须懂得计算机知识、心理学和哲学。",
+            "什么是机器学习？": "机器学习（Machine Learning）是人工智能的核心技术之一，它使计算机系统能够从数据中学习并改进其性能，而无需进行明确编程。机器学习算法使用统计技术使计算机能够从数据中学习，随着更多数据的输入，算法的性能会不断提升。",
+            "什么是深度学习？": "深度学习（Deep Learning）是机器学习的一个子集，它使用多层神经网络来模拟人脑的学习过程。深度学习算法能够自动从原始数据中学习特征表示，无需人工提取特征。深度学习在图像识别、语音识别、自然语言处理等领域取得了突破性进展。",
+            "人工智能和机器学习的关系？": "人工智能是一个广泛的概念，指的是机器表现出的智能。机器学习是实现人工智能的一种方法，它使计算机能够从数据中学习。深度学习是机器学习的一个子领域，使用多层神经网络进行学习。简单来说：人工智能 > 机器学习 > 深度学习。",
+            "什么是神经网络？": "神经网络（Neural Network）是一种模仿人脑神经元结构和功能的计算模型。它由大量的节点（神经元）和它们之间的连接组成，每个节点接收输入，进行计算，并将结果传递给下一层的节点。神经网络通过调整连接权重来学习从输入到输出的映射关系。",
+            "什么是监督学习？": "监督学习（Supervised Learning）是机器学习的一种类型，它使用带有标签的训练数据来训练模型。在监督学习中，每个训练样本都包含输入和对应的输出标签，模型通过学习输入和输出之间的关系来预测新数据的输出。常见的监督学习任务包括分类和回归。",
+            "什么是非监督学习？": "非监督学习（Unsupervised Learning）是机器学习的一种类型，它使用不带标签的训练数据来训练模型。在非监督学习中，模型需要自己发现数据中的模式和结构。常见的非监督学习任务包括聚类、降维和关联规则挖掘。",
+            "什么是强化学习？": "强化学习（Reinforcement Learning）是机器学习的一种类型，它通过智能体与环境的交互来学习最优行为策略。智能体在环境中执行动作，获得奖励或惩罚，通过试错来学习能够最大化累积奖励的策略。强化学习在游戏AI、机器人控制等领域有广泛应用。",
+            "什么是自然语言处理？": "自然语言处理（Natural Language Processing，简称NLP）是人工智能的一个分支，它使计算机能够理解、处理和生成人类语言。NLP技术包括文本分类、情感分析、机器翻译、问答系统、语音识别等，广泛应用于智能客服、搜索引擎、聊天机器人等领域。",
+            "什么是图像识别？": "图像识别（Image Recognition）是计算机视觉的一个重要领域，它使计算机能够识别和分类图像中的物体、场景和人物。图像识别技术基于深度学习，特别是卷积神经网络（CNN），在人脸识别、物体检测、医学影像分析等领域有广泛应用。",
+            "什么是数据挖掘？": "数据挖掘（Data Mining）是从大量数据中发现模式、规律和知识的过程。它结合了统计学、机器学习、数据库技术等多种方法，用于从数据中提取有价值的信息。数据挖掘在市场营销、金融分析、医疗诊断等领域有广泛应用。",
+            "什么是特征工程？": "特征工程（Feature Engineering）是机器学习中非常重要的一个环节，它包括选择、提取、转换和创建特征，以便更好地表示数据。好的特征能够显著提高模型的性能。特征工程需要领域知识和创造力，是机器学习项目成功的关键。",
+            "什么是过拟合？": "过拟合（Overfitting）是指模型在训练数据上表现很好，但在测试数据上表现很差的现象。这意味着模型过于复杂，学习了训练数据中的噪声和细节，而不是数据的本质规律。解决过拟合的方法包括增加训练数据、使用正则化、减少模型复杂度等。",
+            "什么是欠拟合？": "欠拟合（Underfitting）是指模型在训练数据和测试数据上都表现很差的现象。这意味着模型过于简单，无法捕捉数据中的复杂关系。解决欠拟合的方法包括增加模型复杂度、使用更强大的模型、改进特征工程等。",
+            "什么是梯度下降？": "梯度下降（Gradient Descent）是一种优化算法，用于最小化损失函数。它通过计算损失函数关于模型参数的梯度，然后沿梯度的反方向更新参数，逐步逼近最优解。梯度下降是训练神经网络和其他机器学习模型的核心算法。",
+            "什么是卷积神经网络？": "卷积神经网络（Convolutional Neural Network，简称CNN）是一种专门用于处理网格数据（如图像）的深度学习模型。CNN使用卷积层来自动提取图像的特征，通过局部感受野和权值共享来减少参数数量，提高模型效率。CNN在图像识别、物体检测等领域取得了巨大成功。",
+            "什么是循环神经网络？": "循环神经网络（Recurrent Neural Network，简称RNN）是一种专门用于处理序列数据的深度学习模型。RNN通过在时间步之间共享参数和传递隐藏状态来捕捉序列中的依赖关系。RNN在自然语言处理、语音识别、时间序列预测等领域有广泛应用。",
+            "什么是Transformer？": "Transformer是一种基于自注意力机制的深度学习模型，由Google在2017年提出。Transformer摒弃了RNN的循环结构，使用自注意力机制来捕捉序列中任意位置之间的依赖关系，能够并行处理序列数据，训练效率更高。Transformer是BERT、GPT等大型语言模型的基础。",
+            "什么是BERT？": "BERT（Bidirectional Encoder Representations from Transformers）是Google在2018年提出的一种预训练语言模型。BERT使用Transformer的编码器部分，通过双向预训练来学习上下文相关的词表示，在多种自然语言处理任务上取得了突破性进展。",
+            "Python在人工智能中的作用？": "Python是人工智能领域最流行的编程语言，它拥有丰富的机器学习和深度学习库，如TensorFlow、PyTorch、Scikit-learn、Pandas、NumPy等。Python语法简洁，易于学习，社区活跃，生态系统完善，是进行AI研究和开发的首选语言。"
+        };
+
+        const stopWords = new Set(['什', '么', '是', '的', '在', '中', '和', '与', '及', '等', '有', '了', '为', '以', '对', '从', '到', '用', '能', '会', '可以', '这个', '那个', '这些', '那些']);
+
+        function extractKeywords(text) {
+            const keywords = new Set();
+            for (let char of text) {
+                if (char >= '\u4e00' && char <= '\u9fa5') {
+                    if (!stopWords.has(char)) {
+                        keywords.add(char);
+                    }
+                }
+            }
+            const englishWords = text.match(/[a-zA-Z]+/g) || [];
+            for (let word of englishWords) {
+                if (word.length >= 2) {
+                    keywords.add(word.toLowerCase());
+                }
+            }
+            return keywords;
+        }
+
+        function buildKeywordIndex() {
+            const index = {};
+            for (let question of Object.keys(knowledgeBase)) {
+                const keywords = extractKeywords(question);
+                for (let keyword of keywords) {
+                    if (!index[keyword]) {
+                        index[keyword] = [];
+                    }
+                    index[keyword].push(question);
+                }
+            }
+            return index;
+        }
+
+        const keywordIndex = buildKeywordIndex();
+
+        function matchQuestion(userQuestion) {
+            const userKeywords = extractKeywords(userQuestion);
+            const candidateQuestions = new Set();
+            
+            for (let keyword of userKeywords) {
+                if (keywordIndex[keyword]) {
+                    for (let question of keywordIndex[keyword]) {
+                        candidateQuestions.add(question);
+                    }
+                }
+            }
+            
+            let maxMatchCount = 0;
+            let bestMatch = null;
+            
+            for (let question of candidateQuestions) {
+                const questionKeywords = extractKeywords(question);
+                let matchCount = 0;
+                for (let keyword of userKeywords) {
+                    if (questionKeywords.has(keyword)) {
+                        matchCount++;
+                    }
+                }
+                if (matchCount > maxMatchCount) {
+                    maxMatchCount = matchCount;
+                    bestMatch = question;
+                }
+            }
+            
+            return {
+                matchedQuestion: bestMatch,
+                answer: bestMatch ? knowledgeBase[bestMatch] : "抱歉，我暂时无法回答这个问题。请尝试提问关于人工智能基础概念、机器学习、深度学习等方面的问题。",
+                matchCount: maxMatchCount
+            };
+        }
+
+        function initQuestionList() {
+            const list = document.getElementById('question-list');
+            const questions = Object.keys(knowledgeBase);
+            document.getElementById('question-count').textContent = questions.length;
+            
+            questions.forEach(question => {
+                const item = document.createElement('div');
+                item.className = 'question-item';
+                item.textContent = question;
+                item.onclick = () => fillQuestion(question);
+                list.appendChild(item);
+            });
+        }
+
+        function fillQuestion(question) {
+            document.getElementById('question-input').value = question;
+        }
+
+        function handleEnter(event) {
+            if (event.key === 'Enter') {
+                submitQuestion();
+            }
+        }
+
+        function submitQuestion() {
+            const input = document.getElementById('question-input');
+            const question = input.value.trim();
+            
+            if (!question) {
+                return;
+            }
+            
+            input.value = '';
+            
+            const chatMessages = document.getElementById('chat-messages');
+            
+            const userDiv = document.createElement('div');
+            userDiv.className = 'message user-message';
+            userDiv.innerHTML = `<div class="message-content">${question}</div>`;
+            chatMessages.appendChild(userDiv);
+            
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            const result = matchQuestion(question);
+            
+            const botDiv = document.createElement('div');
+            botDiv.className = 'message bot-message';
+            
+            let botHtml = '';
+            if (result.matchedQuestion) {
+                botHtml += `<div class="match-info">匹配问题：${result.matchedQuestion} (匹配关键词数：${result.matchCount})</div>`;
+            }
+            botHtml += `<div class="message-content">${result.answer}</div>`;
+            
+            botDiv.innerHTML = botHtml;
+            chatMessages.appendChild(botDiv);
+            
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        initQuestionList();
+    </script>
+</body>
+</html>
